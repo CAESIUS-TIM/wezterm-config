@@ -5,7 +5,9 @@ A wezterm config.
 - [Quick start](https://wezfurlong.org/wezterm/config/files.html)
 - [Full Config & Lua Reference](https://wezfurlong.org/wezterm/config/lua/general.html)
 
-## TODO
+![main](docs/screenshots/main.png)
+
+## TODO and Thanks
 
 - [ ] https://github.com/wez/wezterm/discussions/628#discussioncomment-5486252
 - [ ] https://github.com/wez/wezterm/discussions/628#discussioncomment-5522382
