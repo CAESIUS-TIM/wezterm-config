@@ -1,53 +1,17 @@
 local wezterm = require('wezterm')
+local utils = require('utils')
 local SOLID_LEFT_ARROW = utf8.char(0xe0b2)
 local TABLE_ICON = utf8.char(0xf0ce)
+local number_day = 3
 
-local function enumerate(tbl, func) -- almost same as python's enumerate(map with index)
-  local t = {}
-  for idx, v in ipairs(tbl) do
-    t[idx] = func(v, idx)
-  end
-  return t
-end
-
--- https://gist.github.com/w13b3/5d8a80fae57ab9d51e285f909e2862e0
-local function zip(...) -- almost same as python's zip
-  local idx, ret, args = 1, {}, { ... }
-  while true do -- loop smallest table-times
-    local sub_table = {}
-    local value
-    for _, table_ in ipairs(args) do
-      value = table_[idx] -- becomes nil if index is out of range
-      if value == nil then
-        break
-      end -- break for-loop
-      table.insert(sub_table, value)
-    end
-    if value == nil then
-      break
-    end -- break while-loop
-    table.insert(ret, sub_table) -- insert the sub result
-    idx = idx + 1
-  end
-  return ret
-end
-
-local function flatten1(tbls) -- flatten 1 level
-  local result = {}
-  ---@diagnostic disable-next-line: unused-local
-  for index, tbl in next, tbls do
-    for _, value in next, tbl do
-      table.insert(result, value)
-    end
-  end
-  return result
-end
-
+---@param weeknum number
+---@diagnostic disable-next-line: unused-local, unused-function
 local function day_of_week_in_japan(weeknum)
   local days = { '日', '月', '火', '水', '木', '金', '土' }
   return days[weeknum + 1]
 end
 
+---@param weeknum number
 local function day_of_week_in_english(weeknum)
   local days = { 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' }
   return days[weeknum + 1]
@@ -88,6 +52,8 @@ end
 --   }
 --   return weathers[weathercode]
 -- end
+
+---@param weathercode string|number
 local function weather_symbol(weathercode)
   --[[
     plus ➕ ⚠️
@@ -248,10 +214,13 @@ local function update_whether()
     return
   end
   -- local res = wezterm.json_parse(stdout).daily
-  local res = wezterm.json_parse(stdout).forecasts[1].casts
+  local json_ = wezterm.json_parse(stdout)
+  local res = json_.forecasts[1].casts
   wezterm.GLOBAL.daily_weather = res
 end
 
+---@param current_dir string
+---@return table|nil
 local function styled_current_git_branch(current_dir)
   ---@diagnostic disable-next-line: unused-local
   local success, stdout, _stderr = wezterm.run_child_process({
@@ -289,31 +258,6 @@ local function styled_current_git_branch(current_dir)
   -- }
 end
 
---- C:/Users/26523/Notes => c/u/2/Notes
---- /home/timxing/.config/wezterm => /h/t/./wezterm
----@param path string|nil
----@return string
-local function short_path(path)
-  if path == nil then
-    return ''
-  end
-  if path:match('/') == nil then
-    return path
-  end
-
-  local short = path:sub(1, 1) == '/' and '/' or ''
-
-  if path:match('^[^/]+/$') then
-    return path
-  end
-
-  for node in path:gmatch('[^/]+/') do
-    short = short .. '/' .. node:sub(1, 1):lower()
-  end
-
-  return short:sub(1, -2) .. path:match('.*/([^/]+)')
-end
-
 ---@diagnostic disable-next-line: unused-local
 local function create_powerlines(window, pane)
   local current_dir
@@ -335,9 +279,8 @@ local function create_powerlines(window, pane)
   --   {daily_weather[3].dayweather,daily_weather[3].daytemp_float, daily_weather[3].nighttemp_float},
   -- }
   local weather_infos = {}
-  local days = 4
   if daily_weather ~= nil then
-    for i = 1, days do
+    for i = 1, number_day do
       if daily_weather[i] == nil then
         break
       end
@@ -349,9 +292,12 @@ local function create_powerlines(window, pane)
     end
   end
   ---@diagnostic disable-next-line: unused-local
-  local styled_whethers = enumerate(weather_infos, function(weather_info, index)
-    return styled_whether(table.unpack(weather_info))
-  end)
+  local styled_whethers = utils.enumerate(
+    weather_infos,
+    function(weather_info, index)
+      return styled_whether(table.unpack(weather_info))
+    end
+  )
   local styled_texts = {}
   local name = window:active_key_table()
   if name then
@@ -376,8 +322,8 @@ local function create_powerlines(window, pane)
       },
     })
   end
-  for i = 1, days do
-    if styled_texts[i] == nil then
+  for i = 1, number_day do
+    if styled_whethers[i] == nil then
       break
     end
     table.insert(styled_texts, styled_whethers[i])
@@ -394,8 +340,18 @@ local function create_powerlines(window, pane)
       },
     },
     {
-      Text = string.format(' %s ', short_path(current_dir)),
+      Text = string.format(' %s ', utils.short_path(current_dir)),
       -- Text = string.format(' %s ', current_dir),
+    },
+  })
+  table.insert(styled_texts, {
+    {
+      Foreground = {
+        Color = '#c0c0c0',
+      },
+    },
+    {
+      Text = ' ' .. window:active_workspace() .. ' ',
     },
   })
   table.insert(styled_texts, {
@@ -413,17 +369,27 @@ local function create_powerlines(window, pane)
       ),
     },
   })
-  return flatten1(enumerate(styled_texts, function(styled_text, index)
-    local color =
-      string.format('hsl(%sdeg 75%% 25%%)', index % 2 == 0 and 240 or 224)
-    return powerline(styled_text, color)
-  end))
+  return utils.flatten1(
+    utils.enumerate(styled_texts, function(styled_text, index)
+      local color =
+        string.format('hsl(%sdeg 75%% 25%%)', index % 2 == 0 and 240 or 224)
+      return powerline(styled_text, color)
+    end)
+  )
 end
 
+local FOUR_HOURS = 3600 * 4
+local THIRTY_SECONDS = 30
 wezterm.on('update-status', function(window, pane)
   local counter = wezterm.GLOBAL.weather_loop_counter or 0
-  if counter % (3600 * 4) == 0 then -- every 4 hours
+  if counter % FOUR_HOURS == 0 then -- every 4 hours
     update_whether()
+  end
+  if
+    wezterm.GLOBAL.daily_weather == nil
+    and counter < (FOUR_HOURS - THIRTY_SECONDS)
+  then
+    counter = FOUR_HOURS - THIRTY_SECONDS
   end
   wezterm.GLOBAL.weather_loop_counter = counter + 1
 
