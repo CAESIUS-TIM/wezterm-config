@@ -32,9 +32,10 @@ local CMD_ICON = utf8.char(0xe62a)
 local NU_ICON = utf8.char(0xe7a8)
 local PS_ICON = utf8.char(0xe70f)
 local ELV_ICON = utf8.char(0xfc6f)
-local WSL_ICON = utf8.char(0xf83c)
+local WSL_ICON = utf8.char(0xe712)
 local YORI_ICON = utf8.char(0xf1d4)
 local NYA_ICON = utf8.char(0xf61a)
+local SSH_ICON = utf8.char(0xeb3a)
 
 local VIM_ICON = utf8.char(0xe62b)
 local HX_ICON = utf8.char(0xe272)
@@ -145,6 +146,8 @@ wezterm.on(
         .. pane_title:gsub('.*: (.+) %- .+', '%1')
     elseif exec_name == 'yori' then
       title_with_icon = YORI_ICON .. ' ' .. pane_title:gsub(' %- Yori', '')
+    elseif exec_name == 'ssh' then
+      title_with_icon = SSH_ICON .. ' SSH'
     elseif exec_name == 'nvim' then
       title_with_icon = VIM_ICON
         .. pane_title:gsub('^(%S+)%s+(%d+/%d+) %- nvim', ' %2 %1')
@@ -277,12 +280,13 @@ end)
 --   gui_window:perform_action(wezterm.action.ToggleFullScreen, pane)
 -- end)
 
--- TODO
+-- -- TODO
+-- config.keys = {}
 -- for i = 1, 8 do
 --   -- CTRL+ALT + number to move to that position
 --   table.insert(config.keys, {
 --     key = tostring(i),
---     mods = 'LEADER',
+--     mods = 'LEADER|ALT',
 --     action = act.MoveTab(i - 1),
 --   })
 -- end
@@ -294,17 +298,19 @@ config.window_decorations = 'RESIZE' -- no title bar -- TODO
 config.color_scheme = 'Catppuccin Frappe'
 config.font_dirs = { 'fonts' } -- TODO
 config.font_size = 14.0
-config.dpi = 96.0 -- TODO
+config.dpi = 96.0
 config.freetype_load_target = 'Normal' -- TODO
 config.font = wezterm.font_with_fallback({
-  'JetBrainsMono NFM',
-  'Iosevka Mayukai Codepro',
-  'Sarasa Mono Slab CL',
+  'JetBrainsMono Nerd Font Mono',
+  -- 'JetBrainsMono NFM',
+  -- 'Iosevka Mayukai Codepro',
+  -- 'Sarasa Mono Slab CL',
 })
 config.tab_max_width = 60
-config.enable_scroll_bar = true
+config.enable_scroll_bar = false
 config.use_fancy_tab_bar = false
-config.window_background_opacity = 0.94
+config.window_background_opacity = 0.85
+config.text_background_opacity = 1
 config.colors = {
   tab_bar = {
     background = '#121212',
@@ -439,7 +445,7 @@ config.keys = {
   --# 2 workspace
   --## 2.0 special
   { -- both new and switch
-    key = 'G',
+    key = 'B',
     mods = 'LEADER|SHIFT',
     action = act.ShowLauncherArgs({
       flags = 'WORKSPACES',
@@ -503,7 +509,7 @@ config.keys = {
   --## 3.2 switch
   --### 3.2.0 misc
   { key = 'o', mods = 'LEADER', action = 'ActivateLastTab' },
-  { key = 'g', mods = 'LEADER', action = 'ShowTabNavigator' },
+  { key = 'b', mods = 'LEADER', action = 'ShowTabNavigator' },
   --### 3.2.1 relative
   {
     key = 'Tab',
@@ -640,17 +646,9 @@ config.keys = {
     action = 'ActivateCommandPalette',
   },
   { key = 'q', mods = 'LEADER', action = 'QuickSelect' },
-  --# 6 misc TODO
-  { key = 'V', mods = 'SHIFT|CTRL', action = act.PasteFrom('Clipboard') },
-  { key = 'U', mods = 'CTRL|SHIFT', action = act.ScrollByPage(-0.5) },
-  { key = 'D', mods = 'CTRL|SHIFT', action = act.ScrollByPage(0.5) },
-  { key = '0', mods = 'CTRL', action = act.ResetFontSize },
-  { key = '=', mods = 'CTRL', action = act.IncreaseFontSize },
-  { key = '-', mods = 'CTRL', action = act.DecreaseFontSize },
-  -- TODO: category
   {
-    key = 'l',
-    mods = 'CTRL|ALT',
+    key = 'Q',
+    mods = 'LEADER|SHIFT',
     action = wezterm.action.QuickSelectArgs({
       label = 'open url',
       patterns = {
@@ -663,12 +661,22 @@ config.keys = {
       end),
     }),
   },
+  --# 6 misc TODO
+  { key = 'V', mods = 'SHIFT|CTRL', action = act.PasteFrom('Clipboard') },
+  { key = 'U', mods = 'CTRL|SHIFT', action = act.ScrollByPage(-0.5) },
+  { key = 'D', mods = 'CTRL|SHIFT', action = act.ScrollByPage(0.5) },
+  { key = '0', mods = 'CTRL', action = act.ResetFontSize },
+  { key = '=', mods = 'CTRL', action = act.IncreaseFontSize },
+  { key = '-', mods = 'CTRL', action = act.DecreaseFontSize },
+  -- TODO: category
   {
     key = 'E',
     mods = 'SHIFT|CTRL',
     action = act.EmitEvent('trigger-vim-with-visible-text'),
   },
   { key = 'R', mods = 'LEADER|SHIFT', action = 'ReloadConfiguration' },
+  { key = '`', mods = 'LEADER', action = 'ShowDebugOverlay' },
+  --# 7 key table
   {
     key = 'r',
     mods = 'LEADER',
@@ -702,16 +710,26 @@ config.key_tables = {
   resize_pane = { -- TESTED
     { key = 'LeftArrow', action = act.AdjustPaneSize({ 'Left', 1 }) },
     { key = 'h', action = act.AdjustPaneSize({ 'Left', 1 }) },
+    { key = 'H', mods = 'SHIFT', action = act.AdjustPaneSize({ 'Left', 5 }) },
 
     { key = 'RightArrow', action = act.AdjustPaneSize({ 'Right', 1 }) },
     { key = 'l', action = act.AdjustPaneSize({ 'Right', 1 }) },
+    { key = 'L', mods = 'SHIFT', action = act.AdjustPaneSize({ 'Right', 5 }) },
 
     { key = 'UpArrow', action = act.AdjustPaneSize({ 'Up', 1 }) },
     { key = 'k', action = act.AdjustPaneSize({ 'Up', 1 }) },
+    { key = 'K', mods = 'SHIFT', action = act.AdjustPaneSize({ 'Up', 5 }) },
 
     { key = 'DownArrow', action = act.AdjustPaneSize({ 'Down', 1 }) },
     { key = 'j', action = act.AdjustPaneSize({ 'Down', 1 }) },
+    { key = 'J', mods = 'SHIFT', action = act.AdjustPaneSize({ 'Down', 5 }) },
 
+    -- no recursion
+    {
+      key = 'r',
+      mods = 'LEADER',
+      action = 'Nop',
+    },
     -- Cancel the mode by pressing escape
     { key = 'Escape', action = 'PopKeyTable' },
     { key = 'q', action = 'PopKeyTable' },
@@ -726,6 +744,12 @@ config.key_tables = {
     { key = 'g', action = 'ScrollToTop' },
     { key = 'G', mods = 'SHIFT', action = 'ScrollToBottom' },
 
+    -- no recursion
+    {
+      key = 'e',
+      mods = 'LEADER',
+      action = 'Nop',
+    },
     -- Cancel the mode by pressing escape
     { key = 'Escape', action = 'PopKeyTable' },
     { key = 'q', action = 'PopKeyTable' },
