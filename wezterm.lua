@@ -416,19 +416,31 @@ config.launch_menu = { -- TODO
   },
 }
 --## key
+config.use_ime = true -- Windows: Always enabled, cannot be disabled
 config.disable_default_key_bindings = true
 config.leader = { key = 'f', mods = 'ALT' }
+-- config.leader = { key = '`', mods = 'NONE' }
 --[[
     1. window
     2. workspace
     3. tab
     4. pane
 
-    1. new/close
+    1. new/close/rename
     2. switch
     3. size
   ]]
 config.keys = {
+  {
+    key = 'f',
+    mods = 'LEADER|ALT',
+    action = act.SendKey({ key = 'f', mods = 'ALT' }),
+  },
+  -- {
+  --   key = '`',
+  --   mods = 'LEADER',
+  --   action = act({ SendString = '`' }),
+  -- },
   --# 1 window
   --## size TODO
   { key = 'Enter', mods = 'ALT', action = 'ToggleFullScreen' },
@@ -451,10 +463,34 @@ config.keys = {
       flags = 'WORKSPACES',
     }),
   },
-  --## 2.1 new/close TODO
+  --## 2.1 new/close/rename TODO
   {
     key = 'N',
     mods = 'CTRL|SHIFT',
+    action = act.PromptInputLine({
+      description = wezterm.format({
+        { Attribute = { Intensity = 'Bold' } },
+        { Foreground = { AnsiColor = 'Fuchsia' } },
+        { Text = 'Enter name for new workspace' },
+      }),
+      action = wezterm.action_callback(function(window, pane, line)
+        -- line will be `nil` if they hit escape without entering anything
+        -- An empty string if they just hit enter
+        -- Or the actual line of text they wrote
+        if line then
+          window:perform_action(
+            act.SwitchToWorkspace({
+              name = line,
+            }),
+            pane
+          )
+        end
+      end),
+    }),
+  },
+  {
+    key = 'T',
+    mods = 'LEADER|SHIFT',
     action = act.PromptInputLine({
       description = wezterm.format({
         { Attribute = { Intensity = 'Bold' } },
@@ -506,6 +542,26 @@ config.keys = {
     mods = 'LEADER|SHIFT',
     action = act({ CloseCurrentTab = { confirm = true } }),
   },
+  {
+    key = 't',
+    mods = 'LEADER',
+    action = act.SpawnTab('CurrentPaneDomain'),
+  },
+  -- {
+  --   key = 'T',
+  --   mods = 'LEADER|SHIFT',
+  --   action = act.PromptInputLine({
+  --     description = 'Enter new name for tab',
+  --     action = wezterm.action_callback(function(window, pane, line)
+  --       -- line will be `nil` if they hit escape without entering anything
+  --       -- An empty string if they just hit enter
+  --       -- Or the actual line of text they wrote
+  --       if line then
+  --         window:active_tab():set_title(line)
+  --       end
+  --     end),
+  --   }),
+  -- },
   --## 3.2 switch
   --### 3.2.0 misc
   { key = 'o', mods = 'LEADER', action = 'ActivateLastTab' },
@@ -693,12 +749,6 @@ config.keys = {
       one_shot = false,
     }),
   },
-  -- If use '`' as LEADER
-  -- {
-  --   key = '`',
-  --   mods = 'LEADER',
-  --   action = act({ SendString = '`' }),
-  -- },
 }
 config.key_tables = {
   -- Defines the keys that are active in our resize-pane mode.
