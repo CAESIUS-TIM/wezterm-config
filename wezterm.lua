@@ -117,8 +117,13 @@ wezterm.on(
     local dim_foreground = '#3A3A3A'
 
     if tab.is_active then
-      background = '#FBB829'
-      foreground = '#1C1B19'
+      if tab.active_pane.is_zoomed then
+        background = '#66CCFF'
+        foreground = '#1C1B19'
+      else
+        background = '#FBB829'
+        foreground = '#1C1B19'
+      end
     elseif hover then
       background = '#FF8700'
       foreground = '#1C1B19'
@@ -187,7 +192,12 @@ wezterm.on(
       left_arrow = SOLID_LEFT_MOST
     end
     local id = SUB_IDX[tab.tab_index + 1]
-    local pid = SUP_IDX[tab.active_pane.pane_index + 1]
+    local pane_number = 0
+    for _, _ in pairs(panes) do
+      pane_number = pane_number + 1
+    end
+    -- local pid = SUP_IDX[tab.active_pane.pane_index + 1]
+    local pid = SUP_IDX[pane_number]
     local title = ' '
       .. wezterm.truncate_right(title_with_icon, max_width - 6)
       .. ' '
