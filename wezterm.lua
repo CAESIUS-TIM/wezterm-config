@@ -135,6 +135,7 @@ wezterm.on(
     local exec_name = basename(process_name):gsub('%.exe$', '')
     local title_with_icon
 
+    --# title_with_icon
     if exec_name == 'nu' then
       title_with_icon = NU_ICON .. ' NuShell'
     elseif exec_name == 'pwsh' then
@@ -187,10 +188,12 @@ wezterm.on(
     if pane_title:match('^Administrator: ') then
       title_with_icon = title_with_icon .. ' ' .. ADMIN_ICON
     end
+    --# appearence: diamond line
     local left_arrow = SOLID_LEFT_ARROW
     if tab.tab_index == 0 then
       left_arrow = SOLID_LEFT_MOST
     end
+    --# info: tab index, pane number
     local id = SUB_IDX[tab.tab_index + 1]
     local pane_number = 0
     for _, _ in pairs(panes) do
@@ -198,6 +201,7 @@ wezterm.on(
     end
     -- local pid = SUP_IDX[tab.active_pane.pane_index + 1]
     local pid = SUP_IDX[pane_number]
+    --# finally
     local title = ' '
       .. wezterm.truncate_right(title_with_icon, max_width - 6)
       .. ' '
@@ -425,6 +429,44 @@ config.launch_menu = { -- TODO
     },
   },
 }
+--## hyperlink_rules
+config.hyperlink_rules = {
+  {
+    regex = '[^(\\[{<A-Za-z]([A-Za-z]+://\\S+)',
+    format = '$1',
+    highlight = 1,
+  },
+  { -- (url) BUG
+    regex = '\\(([A-Za-z]+://\\S+)\\)',
+    format = '$1',
+    highlight = 1,
+  },
+  -- {
+  --   regex = '\\((\\w+://\\S+)\\)',
+  --   format = '$1',
+  --   highlight = 1,
+  -- },
+  { -- [url] BUG
+    regex = '\\[([A-Za-z]+://\\S+)\\]',
+    format = '$1',
+    highlight = 1,
+  },
+  { -- {url} BUG
+    regex = '\\{([A-Za-z]+://\\S+)\\}',
+    format = '$1',
+    highlight = 1,
+  },
+  { -- <url> BUG
+    regex = '<([A-Za-z]+://\\S+)>',
+    format = '$1',
+    highlight = 1,
+  },
+  { -- email
+    regex = '\\b\\w+@[\\w-]+(?:\\.[\\w-]+)+\\b',
+    format = 'mailto:$0',
+    -- highlight = 1,
+  },
+}
 --## key
 config.use_ime = true -- Windows: Always enabled, cannot be disabled
 config.disable_default_key_bindings = true
@@ -480,8 +522,8 @@ config.keys = {
     action = act.PromptInputLine({
       description = wezterm.format({
         { Attribute = { Intensity = 'Bold' } },
-        { Foreground = { AnsiColor = 'Fuchsia' } },
-        { Text = 'Enter name for new workspace' },
+        { Foreground = { Color = 'Cyan' } },
+        { Text = '[Create a new workspace]\nEnter name for new workspace' },
       }),
       action = wezterm.action_callback(function(window, pane, line)
         -- line will be `nil` if they hit escape without entering anything
@@ -504,8 +546,8 @@ config.keys = {
     action = act.PromptInputLine({
       description = wezterm.format({
         { Attribute = { Intensity = 'Bold' } },
-        { Foreground = { AnsiColor = 'Fuchsia' } },
-        { Text = 'Enter name for new workspace' },
+        { Foreground = { Color = 'Cyan' } },
+        { Text = '[Create a new workspace]\nEnter name for new workspace' },
       }),
       action = wezterm.action_callback(function(window, pane, line)
         -- line will be `nil` if they hit escape without entering anything
@@ -522,6 +564,21 @@ config.keys = {
       end),
     }),
   },
+  -- {
+  --   key = 'T',
+  --   mods = 'LEADER|SHIFT',
+  --   action = act.PromptInputLine({
+  --     description = 'Enter new name for tab',
+  --     action = wezterm.action_callback(function(window, pane, line)
+  --       -- line will be `nil` if they hit escape without entering anything
+  --       -- An empty string if they just hit enter
+  --       -- Or the actual line of text they wrote
+  --       if line then
+  --         window:active_tab():set_title(line)
+  --       end
+  --     end),
+  --   }),
+  -- },
   --## 2.2 switch TODO
   {
     key = '}',
@@ -540,7 +597,7 @@ config.keys = {
     action = act.SwitchWorkspaceRelative(1),
   },
   --# 3 tab
-  --## 3.1 new/close TODO
+  --## 3.1 new/close/rename TODO
   { key = 'f', mods = 'LEADER', action = 'ShowLauncher' },
   {
     key = 'T',
@@ -557,21 +614,30 @@ config.keys = {
     mods = 'LEADER',
     action = act.SpawnTab('CurrentPaneDomain'),
   },
-  -- {
-  --   key = 'T',
-  --   mods = 'LEADER|SHIFT',
-  --   action = act.PromptInputLine({
-  --     description = 'Enter new name for tab',
-  --     action = wezterm.action_callback(function(window, pane, line)
-  --       -- line will be `nil` if they hit escape without entering anything
-  --       -- An empty string if they just hit enter
-  --       -- Or the actual line of text they wrote
-  --       if line then
-  --         window:active_tab():set_title(line)
-  --       end
-  --     end),
-  --   }),
-  -- },
+  {
+    key = 'M',
+    mods = 'LEADER|SHIFT',
+    action = act.PromptInputLine({
+      description = wezterm.format({
+        { Attribute = { Intensity = 'Bold' } },
+        { Foreground = { AnsiColor = 'Fuchsia' } },
+        { Text = '[Rename workspace]\nEnter new name for workspace' },
+      }),
+      action = wezterm.action_callback(function(window, pane, line)
+        -- line will be `nil` if they hit escape without entering anything
+        -- An empty string if they just hit enter
+        -- Or the actual line of text they wrote
+        if line then
+          for _, v in ipairs(mux.get_workspace_names()) do
+            if line == v then
+              return
+            end
+          end
+          mux.rename_workspace(window:active_workspace(), line)
+        end
+      end),
+    }),
+  },
   --## 3.2 switch
   --### 3.2.0 misc
   { key = 'o', mods = 'LEADER', action = 'ActivateLastTab' },
@@ -712,16 +778,39 @@ config.keys = {
     action = 'ActivateCommandPalette',
   },
   { key = 'q', mods = 'LEADER', action = 'QuickSelect' },
-  {
+  { -- hyperlink_rules
+    --[[
+smb://192.168.114.145 some words
+[0.0]smb://192.168.114.145 some words
+[0.1]https://www.baidu.com/s?ie=utf-8&wd=%2F%5C%5C()%5C%22()'-.a()()()()()()()() some words
+[1.0](smb://192.168.114.145)some words
+[1.1](https://www.baidu.com/s?ie=utf-8&wd=%5C()%5C%22()'-.%3C%3E~!%40%23*%7B%7D~%3F) some words
+[1.2](https://www.baidu.com/s?ie=utf-8&wd=%5C()%5C%22()'-.%3C%3E~!%40%23*%7B%7D~%3F()) some words
+[2]<https://search.bilibili.com/all?keyword=!)%23%5E%26180261*)%40%26%23%5E!1>>some words
+[3]{ftp://frp-bag.top}some words
+[4][udp://localhost:443]some words
+[5.0]11415141918@qq.com some words
+[5.1]cxky_yyds@not-gmail.com some words
+[5.2] TODO
+    ]]
     key = 'Q',
     mods = 'LEADER|SHIFT',
     action = wezterm.action.QuickSelectArgs({
       label = 'open url',
       patterns = {
-        '\\b\\w+://\\S+[/a-zA-Z0-9-]+',
+        -- protocol ::= [A-Za-z]
+        -- '\\b\\w+://\\S+[/a-zA-Z0-9-]+', -- BUG
+        '[^(\\[{<A-Za-z]([A-Za-z]+://\\S+)',
+        -- '\\((\\w+://\\S+)\\)',
+        '\\(([A-Za-z]+://\\S+)\\)',
+        '\\[([A-Za-z]+://\\S+)\\]',
+        '\\{([A-Za-z]+://\\S+)\\}',
+        '<([A-Za-z]+://\\S+)>',
+        '\\b\\w+@[\\w-]+(?:\\.[\\w-]+)+\\b',
       },
       action = wezterm.action_callback(function(window, pane)
         local url = window:get_selection_text_for_pane(pane)
+        window:copy_to_clipboard(url, 'Clipboard')
         wezterm.log_info('opening: ' .. url)
         wezterm.open_with(url)
       end),

@@ -397,7 +397,7 @@ local function create_powerlines(window, pane)
       -- Text = string.format(' %s ', current_dir),
     },
   })
-  local workspace = window:active_workspace() 
+  local workspace = window:active_workspace()
   local workspace_color = utils.generate_window_color(workspace)
   print('workspace_color: ' .. workspace_color)
   table.insert(styled_texts, {
