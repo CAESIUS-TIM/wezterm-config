@@ -98,4 +98,50 @@ function module.short_path(path)
   return path
 end
 
+-- 用于计算颜色亮度的函数
+---@param color table color@{u8,u8,u8}
+---@return number
+function module.calculate_brightness(color)
+  return 0.299 * color[1] + 0.587 * color[2] + 0.114 * color[3]
+end
+
+-- 通过字符串哈希生成颜色
+---@param title string
+---@return string
+function module.generate_window_color(title)
+  local target_brightness = 127  -- 你可以调整目标亮度的阈值
+  print('--- utils.generate_window_color ---[[')
+  -- 计算字符串哈希值
+  local hash = 0
+  for i = 1, #title do
+    hash = (hash << 5) - hash + title:byte(i)
+  end
+
+  -- 将哈希值映射到RGB颜色空间
+  local r = (hash & 0xFF0000) >> 16
+  local g = (hash & 0x00FF00) >> 8
+  local b = hash & 0x0000FF
+
+  -- 计算亮度
+  local brightness = module.calculate_brightness({r, g, b})
+  print('hash: ' .. string.format("%x", hash))
+  print('rgb: ' .. string.format("%02x,%02x,%02x", r,g,b))
+  print('brightness: ' .. brightness)
+
+  -- 调整亮度，确保颜色相对亮
+  if brightness < target_brightness then
+    local brightness_factor = target_brightness / brightness
+
+    r = math.min(255, math.floor(r * brightness_factor))
+    g = math.min(255, math.floor(g * brightness_factor))
+    b = math.min(255, math.floor(b * brightness_factor))
+    print('target rgb: ' .. string.format("%02x,%02x,%02x", r,g,b))
+  end
+
+  local color = (r << 16) | (g << 8) | b
+  print('color: ' .. string.format("%06x", color))
+  print('--- utils.generate_window_color ---]] ')
+  return string.format('#%06x',color)
+end
+
 return module

@@ -1,8 +1,14 @@
 local wezterm = require('wezterm')
 local utils = require('utils')
+
+local number_day = 3
+
 local SOLID_LEFT_ARROW = utf8.char(0xe0b2)
 local TABLE_ICON = utf8.char(0xf0ce)
-local number_day = 3
+
+local LEADER_COLOR = 'gold'
+local TABLE_COLOR = 'lime'
+local COMPOSITION_COLOR = 'cyan'
 
 ---@param weeknum number
 ---@diagnostic disable-next-line: unused-local, unused-function
@@ -299,12 +305,35 @@ local function create_powerlines(window, pane)
     end
   )
   local styled_texts = {}
+  -- leader, table, composition
+  if window:leader_is_active() then
+    table.insert(styled_texts, {
+      {
+        Foreground = {
+          Color = LEADER_COLOR,
+        },
+      },
+      {
+        Text = ' LEADER ',
+      },
+    })
+    table.insert(styled_texts, {
+      {
+        Foreground = {
+          Color = LEADER_COLOR,
+        },
+      },
+      {
+        Text = TABLE_ICON,
+      },
+    })
+  end
   local name = window:active_key_table()
   if name then
     table.insert(styled_texts, {
       {
         Foreground = {
-          Color = '#c0c0c0',
+          Color = TABLE_COLOR,
         },
       },
       {
@@ -314,7 +343,7 @@ local function create_powerlines(window, pane)
     table.insert(styled_texts, {
       {
         Foreground = {
-          Color = '#c0c0c0',
+          Color = TABLE_COLOR,
         },
       },
       {
@@ -322,6 +351,30 @@ local function create_powerlines(window, pane)
       },
     })
   end
+  local composition = window:composition_status()
+  if composition then
+    table.insert(styled_texts, {
+      {
+        Foreground = {
+          Color = COMPOSITION_COLOR,
+        },
+      },
+      {
+        Text = ' ' .. composition .. ' ',
+      },
+    })
+    table.insert(styled_texts, {
+      {
+        Foreground = {
+          Color = COMPOSITION_COLOR,
+        },
+      },
+      {
+        Text = TABLE_ICON,
+      },
+    })
+  end
+  -- weather
   for i = 1, number_day do
     if styled_whethers[i] == nil then
       break
@@ -344,14 +397,17 @@ local function create_powerlines(window, pane)
       -- Text = string.format(' %s ', current_dir),
     },
   })
+  local workspace = window:active_workspace() 
+  local workspace_color = utils.generate_window_color(workspace)
+  print('workspace_color: ' .. workspace_color)
   table.insert(styled_texts, {
     {
       Foreground = {
-        Color = '#c0c0c0',
+        Color = workspace_color,
       },
     },
     {
-      Text = ' ' .. window:active_workspace() .. ' ',
+      Text = ' ' .. workspace .. ' ',
     },
   })
   table.insert(styled_texts, {

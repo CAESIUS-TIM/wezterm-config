@@ -47,8 +47,8 @@ local HOURGLASS_ICON = utf8.char(0xf252)
 local CPU_ICON = utf8.char(0xf4bc)
 local FOLDER_ICON = utf8.char(0xf07c)
 
-local PYTHON_ICON = utf8.char(0xf820)
-local NODE_ICON = utf8.char(0xe74e)
+local PYTHON_ICON = utf8.char(0xe73c)
+local NODE_ICON = utf8.char(0xe718)
 local DENO_ICON = utf8.char(0xe628)
 local LAMBDA_ICON = utf8.char(0xfb26)
 

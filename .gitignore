@@ -1,0 +1,9 @@
+# backup, disable and hidden
+*.bak
+*.disable
+_*
+
+# ide, editor and lsp
+.luarc.json
+.vscode/
+
